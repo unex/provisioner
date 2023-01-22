@@ -1,11 +1,13 @@
 <?php
 /**
- * SPL Auto-loader
+ * Auto-loader
  *
  * @author Darren Schreiber
  * @license MPL / GPLv2 / LGPL
  * @package Provisioner
  */
+
+ if (!class_exists('ProvisionerConfig')) {
 class ProvisionerConfig {
     /**
      * Setup anything required to make our provisioner class work
@@ -18,7 +20,7 @@ class ProvisionerConfig {
         ));
     }
 
-    public static function endpointsAutoload($class) {		
+    public static function endpointsAutoload($class) {
         // If for some reason we get here and the class is already loaded, return
         if (class_exists($class, FALSE))
         {
@@ -27,8 +29,11 @@ class ProvisionerConfig {
 
         // Try to include the class
         $file = str_replace('_', DIRECTORY_SEPARATOR, $class) . '.php';
-        if (is_file(PROVISIONER_BASE . $file)) {
-            require_once(PROVISIONER_BASE . $file);
+
+		$file = FreePBX::Endpointman()->PHONE_MODULES_PATH . $file;
+
+        if (is_file($file)) {
+            require $file;
 
             return TRUE;
         }
@@ -36,5 +41,5 @@ class ProvisionerConfig {
         return FALSE;
     }
 }
-
+}
 ProvisionerConfig::setup();
