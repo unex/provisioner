@@ -4,10 +4,14 @@ $force = isset($_REQUEST['force']) ? TRUE : FALSE;
 $push = isset($_REQUEST['push']) ? TRUE : FALSE;
 set_time_limit(0);
 define("MODULES_DIR", dirname(__FILE__)."/endpoint");
-define("RELEASE_DIR", "/usr/src/test/v3");
+define("RELEASE_DIR", dirname(__FILE__)."/build");
 define("ROOT_DIR", dirname(__FILE__));
 define("FIRMWARE_DIR", "/usr/src/provisioner_framework");
 define("BRANCH", "master");
+
+if (!file_exists(RELEASE_DIR)) {
+    mkdir(RELEASE_DIR);
+}
 
 file_put_contents(RELEASE_DIR.'/update_status', '1');
 
@@ -53,7 +57,6 @@ if(file_exists('tests.json')) {
 			}
 		}
 		$test_suite = isset($data['test']) ? $data['test'] : $test_suite;
-		
 	}
 	unlink('tests.json');
 	if($testsc != $total_tests) {
@@ -186,17 +189,17 @@ echo "\nDone!";
 *
 *
 *************/
-function create_brand_pkg($rawname,$version,$brand_name,$old_brand_timestamp,$c_message) {	
+function create_brand_pkg($rawname,$version,$brand_name,$old_brand_timestamp,$c_message) {
 	global $brands_html, $supported_phones, $force;
 
 	$pkg_name = $rawname;
-	
+
 	if(!file_exists(RELEASE_DIR."/".$rawname)) {
 		mkdir(RELEASE_DIR."/".$rawname);
-		
+
 	}
 	$family_max_array = array(); //Clear family array
-	$z = 0;	
+	$z = 0;
 	foreach (glob(MODULES_DIR."/".$rawname."/*", GLOB_ONLYDIR) as $family_folders) {
 		flush_buffers();
 		if(file_exists($family_folders."/family_data.json")) {
@@ -210,12 +213,12 @@ function create_brand_pkg($rawname,$version,$brand_name,$old_brand_timestamp,$c_
 				$supported_phones[$brand_name][$z][$b] = $data['model'];
 				$b++;
 			}
-			
+
 			$i=0;
-			
+
 			$dir_iterator = new RecursiveDirectoryIterator($family_folders."/");
 			$iterator = new RecursiveIteratorIterator($dir_iterator, RecursiveIteratorIterator::SELF_FIRST);
-			
+
 			foreach ($iterator as $family_files) {
 				if((!is_dir($family_files)) && (dirname($family_files) != $family_folders."/firmware") && (dirname($family_files) != $family_folders."/json")) {
 					$path_parts = pathinfo($family_files);
@@ -224,14 +227,14 @@ function create_brand_pkg($rawname,$version,$brand_name,$old_brand_timestamp,$c_
 						echo "\t\tParsing File: ".basename($family_files)."|".$files_array[$i]."\n";
 						$i++;
 					}
-				} 
+				}
 			}
-			
+
 			$family_max = max($files_array);
 			$family_max_array[$z] = $family_max;
 			echo "\t\t\tTotal Family Timestamp: ". $family_max ."\n";
-						
-			if(file_exists(FIRMWARE_DIR."/".$rawname."/".$family_xml['data']['directory']."/firmware")) {		
+
+			if(file_exists(FIRMWARE_DIR."/".$rawname."/".$family_xml['data']['directory']."/firmware")) {
 				echo "\t\tFound Firmware Folder in ".$family_xml['data']['directory']."\n";
 				$firmware_files_array = array(); //Clear firmware array
 				flush_buffers();
@@ -244,7 +247,7 @@ function create_brand_pkg($rawname,$version,$brand_name,$old_brand_timestamp,$c_
 						$x++;
 					}
 				}
-				
+
 				$firmware_max = max($firmware_files_array);
                 echo "\t\t\t\t\tTotal Firmware Timestamp: ". $firmware_max ."\n";
 
@@ -253,55 +256,55 @@ function create_brand_pkg($rawname,$version,$brand_name,$old_brand_timestamp,$c_
 					echo "\t\t\tCreating Firmware Package\n";
 					exec("tar zcf ".RELEASE_DIR."/".$rawname."/".$family_xml['data']['directory']."_firmware.tgz --exclude .svn -C ".FIRMWARE_DIR."/".$rawname."/".$family_xml['data']['directory']." firmware");
 					$firmware_md5 = md5_file(RELEASE_DIR."/".$rawname."/".$family_xml['data']['directory']."_firmware.tgz");
-				
+
 					echo "\t\t\tPackage MD5 SUM: ".$firmware_md5."\n";
-				
+
 					echo "\t\t\tAdding Firmware Package Information to family_data.json File\n";
-				
+
 					if($firmware_max > $family_max) {
 						echo "\t\t\tFirmware Timestamp is newer than Family Timestamp, updating Family Timestamp to match\n";
 						$family_max = $firmware_max;
 						$family_max_array[$z] = $family_max;
 					}
-                
+
 					$family_array = file2json($family_folders."/family_data.json");
-					
+
 					$family_array['data']['firmware_ver'] = $firmware_max;
 					$family_array['data']['firmware_md5sum'] = $firmware_md5;
 					$family_array['data']['firmware_pkg'] = $family_xml['data']['directory']."_firmware.tgz";
-					
-					file_put_contents($family_folders."/family_data.json",json_format(json_encode($family_array)));					
+
+					file_put_contents($family_folders."/family_data.json",json_format(json_encode($family_array)));
 				} else {
 					echo "\t\t\tFirmware has not changed, not updating package\n";
 				}
 			}
-			
+
 			$z++;
-			
+
 			echo "\tComplete..Continuing..\n";
-			
-			$family_list[] = array('id' => $family_xml['data']['id'], 
-			'name' => $family_xml['data']['name'], 
+
+			$family_list[] = array('id' => $family_xml['data']['id'],
+			'name' => $family_xml['data']['name'],
 			'directory' => $family_xml['data']['directory'],
 			'description' => $family_xml['data']['description'],
 			'changelog' => $family_xml['data']['changelog'],
 			'last_modified' => $family_xml['data']['last_modified']);
 	    }
-	}	
+	}
 	echo "\n\t==========".$brand_name."==========\n";
 	echo "\tCreating Completed Package\n";
-	
+
 	$fp = fopen(MODULES_DIR."/".$rawname."/brand_data.json", 'r');
 	$contents = fread($fp, filesize(MODULES_DIR."/".$rawname."/brand_data.json"));
 	fclose($fp);
-	
+
 	$brand_array = file2json(MODULES_DIR."/".$rawname."/brand_data.json");
-	
+
 	$brand_array['data']['brands']['family_list'] = array();
 	$brand_array['data']['brands']['family_list'] = $family_list;
-	
+
 	$brand_array['data']['brands']['package'] = $pkg_name;
-	
+
 	$i=0;
 	foreach (glob(MODULES_DIR."/".$rawname."/*") as $brand_files) {
 		if((!is_dir($brand_files)) AND (basename($brand_files) != "brand_data.json") AND (basename($brand_files) != "brand_data.json")) {
@@ -314,30 +317,30 @@ function create_brand_pkg($rawname,$version,$brand_name,$old_brand_timestamp,$c_
 	$temp = max($family_max_array);
 	$brand_max = max($brand_max,$temp);
 	echo "\t\t\tTotal Brand Timestamp: ".$brand_max."\n";
-	
+
 	if(($force) OR ($brand_max != $old_brand_timestamp)) {
 		$brand_array['data']['brands']['last_modified'] = $brand_max;
 		$brand_array['data']['brands']['changelog'] = $c_message;
 		$brand_array['data']['brands']['package'] = $pkg_name.".tgz";
-		
+
 		file_put_contents(MODULES_DIR."/".$rawname."/brand_data.json",json_format(json_encode($brand_array)));
-	
+
 		copy(MODULES_DIR."/".$rawname."/brand_data.json", RELEASE_DIR."/".$rawname."/".$rawname.".json");
-	
+
 		mkdir(RELEASE_DIR."/".$rawname."/");
 		exec("tar zcf ".RELEASE_DIR."/".$rawname."/".$pkg_name.".tgz --exclude .svn --exclude firmware -C ".MODULES_DIR." ".$rawname);
 		$brand_md5 = md5_file(RELEASE_DIR."/".$rawname."/".$pkg_name.".tgz");
 		echo "\t\tPackage MD5 SUM: ".$brand_md5."\n";
-		
+
 		$brand_array['data']['brands']['md5sum'] = $brand_md5;
-	
+
 		file_put_contents(MODULES_DIR."/".$rawname."/brand_data.json",json_format(json_encode($brand_array)));
 		copy(MODULES_DIR."/".$rawname."/brand_data.json", RELEASE_DIR."/".$rawname."/".$rawname.".json");
-	
+
 		$brands_html .= "==== ".$rawname." (Last Modified: ".date('m/d/Y',$brand_max)." at ".date("G:i",$brand_max).") ====\n";
 		$brands_html .= "XML File: [http://www.provisioner.net/release/v3/".$rawname."/".$rawname.".json ".$rawname.".json]\n\n";
 		$brands_html .= "Package File: [http://www.provisioner.net/release/v3/".$rawname."/".$pkg_name.".tgz ".$pkg_name.".tgz]\n";
-		
+
 		echo "\tComplete..Continuing..\n";
 	} else {
 		$brands_html .= "==== ".$rawname." (Last Modified: ".date('m/d/Y',$brand_max)." at ".date("G:i",$brand_max).") ====\n";
@@ -363,80 +366,80 @@ function file2json($file) {
     }
 }
 
-function json_format($json) 
-{ 
-    $tab = "  "; 
-    $new_json = ""; 
-    $indent_level = 0; 
-    $in_string = false; 
+function json_format($json)
+{
+    $tab = "  ";
+    $new_json = "";
+    $indent_level = 0;
+    $in_string = false;
 
-    $json_obj = json_decode($json); 
+    $json_obj = json_decode($json);
 
-    if($json_obj === false) 
-        return false; 
+    if($json_obj === false)
+        return false;
 
-    $json = json_encode($json_obj); 
-    $len = strlen($json); 
+    $json = json_encode($json_obj);
+    $len = strlen($json);
 
-    for($c = 0; $c < $len; $c++) 
-    { 
-        $char = $json[$c]; 
-        switch($char) 
-        { 
-            case '{': 
-            case '[': 
-                if(!$in_string) 
-                { 
-                    $new_json .= $char . "\n" . str_repeat($tab, $indent_level+1); 
-                    $indent_level++; 
-                } 
-                else 
-                { 
-                    $new_json .= $char; 
-                } 
-                break; 
-            case '}': 
-            case ']': 
-                if(!$in_string) 
-                { 
-                    $indent_level--; 
-                    $new_json .= "\n" . str_repeat($tab, $indent_level) . $char; 
-                } 
-                else 
-                { 
-                    $new_json .= $char; 
-                } 
-                break; 
-            case ',': 
-                if(!$in_string) 
-                { 
-                    $new_json .= ",\n" . str_repeat($tab, $indent_level); 
-                } 
-                else 
-                { 
-                    $new_json .= $char; 
-                } 
-                break; 
-            case ':': 
-                if(!$in_string) 
-                { 
-                    $new_json .= ": "; 
-                } 
-                else 
-                { 
-                    $new_json .= $char; 
-                } 
-                break; 
-            case '"': 
-                if($c > 0 && $json[$c-1] != '\\') 
-                { 
-                    $in_string = !$in_string; 
-                } 
-            default: 
-                $new_json .= $char; 
-                break;                    
-        } 
-    } 
+    for($c = 0; $c < $len; $c++)
+    {
+        $char = $json[$c];
+        switch($char)
+        {
+            case '{':
+            case '[':
+                if(!$in_string)
+                {
+                    $new_json .= $char . "\n" . str_repeat($tab, $indent_level+1);
+                    $indent_level++;
+                }
+                else
+                {
+                    $new_json .= $char;
+                }
+                break;
+            case '}':
+            case ']':
+                if(!$in_string)
+                {
+                    $indent_level--;
+                    $new_json .= "\n" . str_repeat($tab, $indent_level) . $char;
+                }
+                else
+                {
+                    $new_json .= $char;
+                }
+                break;
+            case ',':
+                if(!$in_string)
+                {
+                    $new_json .= ",\n" . str_repeat($tab, $indent_level);
+                }
+                else
+                {
+                    $new_json .= $char;
+                }
+                break;
+            case ':':
+                if(!$in_string)
+                {
+                    $new_json .= ": ";
+                }
+                else
+                {
+                    $new_json .= $char;
+                }
+                break;
+            case '"':
+                if($c > 0 && $json[$c-1] != '\\')
+                {
+                    $in_string = !$in_string;
+                }
+            default:
+                $new_json .= $char;
+                break;
+        }
+    }
 
-    return $new_json; 
+    return $new_json;
 }
