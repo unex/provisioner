@@ -1,5 +1,13 @@
 # Quick Overview
--More Information can be found at: http://www.provisioner.net
+
+Created for use with https://github.com/unex/endpointman
+
+This repo live builds the "latest" provisioner build as it seems provisioner.net is a dead project.
+
+Package: https://unex.github.io/provisioner/provisioner_net.tgz
+
+You can also use this repo as the endpointman "Package Server" by entering `https://unex.github.io/provisioner/`
+
 
 ## General Files
 autoload.php - Project Autoloader Class
