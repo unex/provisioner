@@ -1,5 +1,3 @@
-setup.php
-temp/
+build/
+__pycache__/
 .DS_Store
-nbproject/private/
-build
