@@ -1,0 +1,26 @@
+{
+  "data": {
+    "brands": {
+      "name": "Digium",
+      "brand_id": "16",
+      "directory": "digium",
+      "package": "digium.tgz",
+      "md5sum": "2e70c2a6c14fbf57beae34bb0abbe076",
+      "last_modified": 1684822309,
+      "family_list": [
+        {
+          "id": "1",
+          "name": "Digium Dxx Series: [D40, D50, D70]",
+          "directory": "dxx",
+          "description": "",
+          "changelog": "",
+          "last_modified": null
+        }
+      ],
+      "oui_list": [
+        "000FD3"
+      ],
+      "changelog": "PACKAGER: "
+    }
+  }
+}
