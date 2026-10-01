@@ -1,6 +1,6 @@
 {
   "data": {
-    "name": "SoundPoint\/Station\/VVX In-Production Models [321,331,335,450,550,560,650,670,5000,6000,7000,500,1500]",
+    "name": "SoundPoint\/Station\/VVX In-Production Models [321,331,335,450,550,560,650,670,5000,6000,7000,500,1500,310]",
     "id": "3",
     "directory": "spipm",
     "firmware_ver": 1345576660,
@@ -143,6 +143,16 @@
         "model": "VVX 500",
         "id": "16",
         "lines": "12",
+        "template_data": [
+          "linekeys.json",
+          "template_data.json",
+          "buddylist.json"
+        ]
+      },
+      {
+        "model": "VVX 310",
+        "id": "17",
+        "lines": "6",
         "template_data": [
           "linekeys.json",
           "template_data.json",
